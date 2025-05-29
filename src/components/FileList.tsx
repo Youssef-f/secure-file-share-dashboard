@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { File, Share, Upload, Users } from 'lucide-react';
 import { ShareDialog } from './ShareDialog';
 import { useToast } from "@/hooks/use-toast";
 
-interface Document {
+interface DocumentFile {
   id: string;
   name: string;
   size: number;
@@ -19,14 +18,14 @@ interface Document {
 }
 
 interface FileListProps {
-  documents: Document[];
-  onDocumentsChange: (documents: Document[]) => void;
+  documents: DocumentFile[];
+  onDocumentsChange: (documents: DocumentFile[]) => void;
   loading: boolean;
 }
 
 export function FileList({ documents, onDocumentsChange, loading }: FileListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFile, setSelectedFile] = useState<Document | null>(null);
+  const [selectedFile, setSelectedFile] = useState<DocumentFile | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const { toast } = useToast();
 
@@ -52,10 +51,10 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
     });
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (documentFile: DocumentFile) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/documents/${document.id}/download`, {
+      const response = await fetch(`/api/documents/${documentFile.id}/download`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -64,17 +63,17 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = window.document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = document.name;
-        document.body.appendChild(a);
+        a.download = documentFile.name;
+        window.document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         
         toast({
           title: "Download started",
-          description: `${document.name} is being downloaded.`,
+          description: `${documentFile.name} is being downloaded.`,
         });
       }
     } catch (error) {
@@ -86,19 +85,19 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
     }
   };
 
-  const handleShare = (document: Document) => {
-    setSelectedFile(document);
+  const handleShare = (documentFile: DocumentFile) => {
+    setSelectedFile(documentFile);
     setShowShareDialog(true);
   };
 
-  const handleDelete = async (document: Document) => {
-    if (!confirm(`Are you sure you want to delete ${document.name}?`)) {
+  const handleDelete = async (documentFile: DocumentFile) => {
+    if (!confirm(`Are you sure you want to delete ${documentFile.name}?`)) {
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/documents/${document.id}`, {
+      const response = await fetch(`/api/documents/${documentFile.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -106,10 +105,10 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
       });
       
       if (response.ok) {
-        onDocumentsChange(documents.filter(doc => doc.id !== document.id));
+        onDocumentsChange(documents.filter(doc => doc.id !== documentFile.id));
         toast({
           title: "File deleted",
-          description: `${document.name} has been deleted successfully.`,
+          description: `${documentFile.name} has been deleted successfully.`,
         });
       }
     } catch (error) {
@@ -159,20 +158,20 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredDocuments.map((document) => (
-              <div key={document.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            {filteredDocuments.map((documentFile) => (
+              <div key={documentFile.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1">
                     <div className="bg-blue-100 p-2 rounded">
                       <File className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 truncate">{document.name}</h4>
+                      <h4 className="text-sm font-medium text-gray-900 truncate">{documentFile.name}</h4>
                       <div className="flex items-center space-x-4 mt-1">
-                        <span className="text-xs text-gray-500">{formatFileSize(document.size)}</span>
-                        <span className="text-xs text-gray-500">Uploaded {formatDate(document.uploadedAt)}</span>
-                        <span className="text-xs text-gray-500">by {document.uploadedBy}</span>
-                        {document.shared && (
+                        <span className="text-xs text-gray-500">{formatFileSize(documentFile.size)}</span>
+                        <span className="text-xs text-gray-500">Uploaded {formatDate(documentFile.uploadedAt)}</span>
+                        <span className="text-xs text-gray-500">by {documentFile.uploadedBy}</span>
+                        {documentFile.shared && (
                           <Badge variant="secondary" className="text-xs">
                             <Users className="w-3 h-3 mr-1" />
                             Shared
@@ -185,14 +184,14 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownload(document)}
+                      onClick={() => handleDownload(documentFile)}
                     >
                       Download
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleShare(document)}
+                      onClick={() => handleShare(documentFile)}
                     >
                       <Share className="w-4 h-4 mr-1" />
                       Share
@@ -200,7 +199,7 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => handleDelete(document)}
+                      onClick={() => handleDelete(documentFile)}
                     >
                       Delete
                     </Button>

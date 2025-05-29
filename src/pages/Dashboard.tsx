@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -8,7 +7,7 @@ import { FileList } from "@/components/FileList";
 import { AuditLogs } from "@/components/AuditLogs";
 import { UserManagement } from "@/components/UserManagement";
 
-type Document = {
+type DocumentFile = {
   id: string;
   name: string;
   size: number;
@@ -20,7 +19,7 @@ type Document = {
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('files');
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +46,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleFileUpload = (newFile: Document) => {
+  const handleFileUpload = (newFile: DocumentFile) => {
     setDocuments(prev => [newFile, ...prev]);
   };
 
