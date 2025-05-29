@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,141 +11,171 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DialogFooter } from "@/components/ui/dialog";
 
 interface Document {
-  id: string;
+  _id: string;
   name: string;
-  size: number;
+  originalname?: string;
+  description?: string;
   type: string;
+  fileType?: string;
+  size: number;
+  fileSize?: number;
   uploadedAt: string;
-  uploadedBy: string;
-  shared: boolean;
+  createdAt?: string;
+  tags?: string[];
+  sharedWith?: Array<{
+    user: string;
+    accessType: string;
+  }>;
 }
 
 interface ShareDialogProps {
   document: Document;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDocumentUpdate: (document: Document) => void;
+  onShareSuccess?: () => void;
 }
 
-export function ShareDialog({ document, open, onOpenChange, onDocumentUpdate }: ShareDialogProps) {
-  const [emails, setEmails] = useState('');
-  const [message, setMessage] = useState('');
-  const [sharing, setSharing] = useState(false);
+export function ShareDialog({
+  document,
+  open,
+  onOpenChange,
+  onShareSuccess,
+}: ShareDialogProps) {
+  const [email, setEmail] = useState("");
+  const [accessType, setAccessType] = useState("view");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleShare = async () => {
-    if (!emails.trim()) {
+    if (!email) {
       toast({
-        title: "Email required",
-        description: "Please enter at least one email address.",
+        title: "Error",
+        description: "Please enter an email address",
         variant: "destructive",
       });
       return;
     }
 
-    setSharing(true);
-    
+    setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/documents/${document.id}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          emails: emails.split(',').map(email => email.trim()),
-          message: message.trim(),
-        }),
-      });
-      
-      if (response.ok) {
-        const updatedDocument = { ...document, shared: true };
-        onDocumentUpdate(updatedDocument);
-        
-        toast({
-          title: "File shared successfully",
-          description: `${document.name} has been shared with the specified users.`,
-        });
-        
-        onOpenChange(false);
-        setEmails('');
-        setMessage('');
-      } else {
-        throw new Error('Sharing failed');
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
       }
-    } catch (error) {
+
+      // First, get the user ID from the email
+      const userResponse = await fetch(
+        `https://docsecure-backend.onrender.com/api/users/by-email/${email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!userResponse.ok) {
+        throw new Error("User not found with this email address");
+      }
+
+      const userData = await userResponse.json();
+      if (!userData.success || !userData.data) {
+        throw new Error("Failed to find user");
+      }
+
+      const userId = userData.data._id;
+
+      // Now share the document with the user
+      const response = await fetch(
+        `https://docsecure-backend.onrender.com/api/documents/${document._id}/share`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId,
+            accessType,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to share document");
+      }
+
       toast({
-        title: "Sharing failed",
-        description: "Please try again or contact support.",
+        title: "Success",
+        description: "Document shared successfully",
+      });
+      onOpenChange(false);
+      setEmail("");
+      onShareSuccess?.();
+    } catch (error) {
+      console.error("Share error:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to share document",
         variant: "destructive",
       });
     } finally {
-      setSharing(false);
+      setLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Share "{document.name}"</DialogTitle>
+          <DialogTitle>Share Document</DialogTitle>
           <DialogDescription>
-            Share this file with other users in your organization.
+            Share "{document.name || document.originalname}" with another user
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
+        <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="emails">Email addresses</Label>
+            <Label htmlFor="email">Email Address</Label>
             <Input
-              id="emails"
-              placeholder="Enter email addresses separated by commas"
-              value={emails}
-              onChange={(e) => setEmails(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="Enter email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-            <p className="text-xs text-gray-500">
-              Separate multiple emails with commas
-            </p>
           </div>
-          
           <div className="space-y-2">
-            <Label htmlFor="message">Message (optional)</Label>
-            <Textarea
-              id="message"
-              placeholder="Add a message for the recipients..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
+            <Label htmlFor="access">Access Type</Label>
+            <Select value={accessType} onValueChange={setAccessType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select access type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="view">View Only</SelectItem>
+                <SelectItem value="edit">Can Edit</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2 pt-4">
-          <Button
-            onClick={handleShare}
-            disabled={sharing}
-            className="flex-1"
-          >
-            {sharing ? (
-              <div className="flex items-center">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Sharing...
-              </div>
-            ) : (
-              'Share File'
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={sharing}
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-        </div>
+          <Button onClick={handleShare} disabled={loading}>
+            {loading ? "Sharing..." : "Share"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

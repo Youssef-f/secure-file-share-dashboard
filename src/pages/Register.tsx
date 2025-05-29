@@ -1,68 +1,71 @@
-
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Upload } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { User, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    organization: ''
+    username: "",
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    roles: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "Passwords do not match. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+
     setIsLoading(true);
-    
+
     try {
-      const response = await fetch('/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          organization: formData.organization
-        }),
-      });
-      
+      const response = await fetch(
+        "https://docsecure-backend.onrender.com/api/users/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            roles: formData.roles || "user", // Default to 'user' if roles are not provided
+          }),
+        }
+      );
+
       if (response.ok) {
         toast({
           title: "Account created!",
-          description: "Your account has been created successfully. Please sign in.",
+          description:
+            "Your account has been created successfully. Please sign in.",
         });
-        window.location.href = '/login';
+        window.location.href = "/login";
       } else {
         const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
+        throw new Error(error.message || "Registration failed");
       }
     } catch (error) {
       toast({
@@ -85,24 +88,28 @@ const Register = () => {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">SecureShare</h1>
-          <p className="text-gray-600 mt-2">Secure file sharing for your organization</p>
+          <p className="text-gray-600 mt-2">
+            Secure file sharing for your organization
+          </p>
         </div>
-        
+
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Create your account</CardTitle>
-            <CardDescription>Join your organization's secure file sharing platform</CardDescription>
+            <CardDescription>
+              Join your organization's secure file sharing platform
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">username</Label>
                 <Input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  placeholder="Enter your full name"
-                  value={formData.name}
+                  placeholder="Enter your username"
+                  value={formData.username}
                   onChange={handleChange}
                   required
                   className="h-11"
@@ -122,18 +129,32 @@ const Register = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="organization">Organization</Label>
+                <Label htmlFor="organization">firstName</Label>
                 <Input
-                  id="organization"
-                  name="organization"
+                  id="firstName"
+                  name="firstName"
                   type="text"
-                  placeholder="Enter your organization name"
-                  value={formData.organization}
+                  placeholder="Enter your first name"
+                  value={formData.firstName}
                   onChange={handleChange}
                   required
                   className="h-11"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">lastName</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  placeholder="enter your last name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  className="h-11"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -148,20 +169,21 @@ const Register = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">roles</Label>
                 <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
+                  id="roles"
+                  name="roles"
+                  type="text"
+                  placeholder="enter your role"
+                  value={formData.roles}
                   onChange={handleChange}
                   required
                   className="h-11"
                 />
               </div>
-              <Button 
-                type="submit" 
+
+              <Button
+                type="submit"
                 className="w-full h-11 bg-blue-600 hover:bg-blue-700"
                 disabled={isLoading}
               >
@@ -180,8 +202,11 @@ const Register = () => {
             </form>
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Already have an account?{' '}
-                <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
                   Sign in
                 </Link>
               </p>
