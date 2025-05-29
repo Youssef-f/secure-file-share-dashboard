@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,11 +64,11 @@ export function FileList({ documents, onDocumentsChange, loading }: FileListProp
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = window.document.createElement('a');
+        const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
         a.download = documentFile.name;
-        window.document.body.appendChild(a);
+        document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         
